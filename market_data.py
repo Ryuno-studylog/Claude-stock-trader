@@ -49,58 +49,36 @@ def screen_stocks(
     max_atr_pct  : ATR14 を現在値で割った割合(%)の上限。ボラティリティフィルタ。
     trend        : "上昇中"（MA25上）/ "下落中"（MA25下）/ "どちらでも"
     """
-    tickers = [s["ticker"] for s in universe]
-    if not tickers:
+    if not universe:
         return pd.DataFrame()
 
-    # バッチ取得（API コールを最小化）
-    raw = yf.download(
-        tickers,
-        period="1y",
-        group_by="ticker",
-        auto_adjust=True,
-        progress=False,
-        threads=True,
-    )
+    from concurrent.futures import ThreadPoolExecutor
 
-    records = []
-    for meta in universe:
-        tk = meta["ticker"]
+    def _fetch(meta):
         try:
-            hist = raw[tk].dropna() if len(tickers) > 1 else raw.dropna()
-            if len(hist) < 30:
-                continue
-
+            hist = yf.Ticker(meta["ticker"]).history(period="1y", auto_adjust=True)
+            if hist.empty or len(hist) < 30:
+                return None
             close  = hist["Close"]
             high_s = hist["High"]
             low_s  = hist["Low"]
             vol_s  = hist["Volume"]
-
             current   = float(close.iloc[-1])
             avg_vol_k = int(vol_s.tail(20).mean() / 1000)
-
-            # ATR14（平均真の値幅）
             tr = pd.concat([
                 high_s - low_s,
                 (high_s - close.shift()).abs(),
                 (low_s  - close.shift()).abs(),
             ], axis=1).max(axis=1)
             atr14_pct = float(tr.tail(14).mean()) / current * 100
-
-            # 25日移動平均との乖離
             ma25      = float(close.tail(25).mean())
             ma25_diff = (current - ma25) / ma25 * 100
-
-            # 52週レンジ位置（0%=年初来安値、100%=年初来高値）
             high52    = float(high_s.max())
             low52     = float(low_s.min())
             range_pos = (current - low52) / (high52 - low52) * 100 if high52 != low52 else 50.0
-
-            # 前日比
-            prev    = float(close.iloc[-2]) if len(close) >= 2 else current
-            day_chg = (current - prev) / prev * 100
-
-            records.append({
+            prev      = float(close.iloc[-2]) if len(close) >= 2 else current
+            day_chg   = (current - prev) / prev * 100
+            return {
                 "証券コード":         meta["証券コード"],
                 "銘柄名":             meta["銘柄名"],
                 "セクター":           meta["セクター"],
@@ -112,9 +90,15 @@ def screen_stocks(
                 "52週レンジ位置(%)":  round(range_pos, 1),
                 "52週高値":           round(high52),
                 "52週安値":           round(low52),
-            })
+            }
         except Exception:
-            pass
+            return None
+
+    records = []
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        for r in executor.map(_fetch, universe):
+            if r:
+                records.append(r)
 
     df = pd.DataFrame(records)
     if df.empty:

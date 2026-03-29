@@ -58,76 +58,77 @@ def get_market_safety() -> dict:
                 "message": f"VIX {vix} — Market panic. New entries not recommended."}
 
 
+def _calc_record(meta: dict) -> dict | None:
+    """1銘柄分のデータを取得して指標を計算する（並列処理用）"""
+    try:
+        hist = yf.Ticker(meta["ticker"]).history(period="1y", auto_adjust=True)
+        if hist.empty or len(hist) < 30:
+            return None
+
+        close  = hist["Close"]
+        high_s = hist["High"]
+        low_s  = hist["Low"]
+        vol_s  = hist["Volume"]
+
+        current   = float(close.iloc[-1])
+        avg_vol_k = int(vol_s.tail(20).mean() / 1000)
+
+        tr = pd.concat([
+            high_s - low_s,
+            (high_s - close.shift()).abs(),
+            (low_s  - close.shift()).abs(),
+        ], axis=1).max(axis=1)
+        atr14_pct = float(tr.tail(14).mean()) / current * 100
+
+        ma25      = float(close.tail(25).mean())
+        ma25_diff = (current - ma25) / ma25 * 100
+
+        high52    = float(high_s.max())
+        low52     = float(low_s.min())
+        range_pos = (current - low52) / (high52 - low52) * 100 if high52 != low52 else 50.0
+
+        prev    = float(close.iloc[-2]) if len(close) >= 2 else current
+        day_chg = (current - prev) / prev * 100
+
+        return {
+            "code":       meta["証券コード"],
+            "name":       meta["銘柄名"],
+            "sector":     meta["セクター"],
+            "price":      round(current),
+            "day_change": round(day_chg, 2),
+            "avg_vol_k":  avg_vol_k,
+            "atr14_pct":  round(atr14_pct, 2),
+            "ma25_diff":  round(ma25_diff, 2),
+            "range_pos":  round(range_pos, 1),
+            "high52":     round(high52),
+            "low52":      round(low52),
+        }
+    except Exception:
+        return None
+
+
 def screen_stocks(
     universe: list,
     min_volume_k: int = 2000,
     max_atr_pct: float = 4.0,
-    trend: str = "any",        # "any" | "uptrend" | "downtrend"
+    trend: str = "any",
 ) -> list[dict]:
     """
-    ユニバースをスクリーニングして条件通過銘柄のリストを返す（JSON-serializable）
+    ユニバースをスクリーニングして条件通過銘柄のリストを返す。
+    個別取得＋並列処理で yfinance バージョン依存を回避する。
     """
-    tickers = [s["ticker"] for s in universe]
-    if not tickers:
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    if not universe:
         return []
 
-    raw = yf.download(
-        tickers,
-        period="1y",
-        group_by="ticker",
-        auto_adjust=True,
-        progress=False,
-        threads=True,
-    )
-
     records = []
-    for meta in universe:
-        tk = meta["ticker"]
-        try:
-            hist = raw[tk].dropna() if len(tickers) > 1 else raw.dropna()
-            if len(hist) < 30:
-                continue
-
-            close  = hist["Close"]
-            high_s = hist["High"]
-            low_s  = hist["Low"]
-            vol_s  = hist["Volume"]
-
-            current   = float(close.iloc[-1])
-            avg_vol_k = int(vol_s.tail(20).mean() / 1000)
-
-            tr = pd.concat([
-                high_s - low_s,
-                (high_s - close.shift()).abs(),
-                (low_s  - close.shift()).abs(),
-            ], axis=1).max(axis=1)
-            atr14_pct = float(tr.tail(14).mean()) / current * 100
-
-            ma25      = float(close.tail(25).mean())
-            ma25_diff = (current - ma25) / ma25 * 100
-
-            high52    = float(high_s.max())
-            low52     = float(low_s.min())
-            range_pos = (current - low52) / (high52 - low52) * 100 if high52 != low52 else 50.0
-
-            prev    = float(close.iloc[-2]) if len(close) >= 2 else current
-            day_chg = (current - prev) / prev * 100
-
-            records.append({
-                "code":       meta["証券コード"],
-                "name":       meta["銘柄名"],
-                "sector":     meta["セクター"],
-                "price":      round(current),
-                "day_change": round(day_chg, 2),
-                "avg_vol_k":  avg_vol_k,
-                "atr14_pct":  round(atr14_pct, 2),
-                "ma25_diff":  round(ma25_diff, 2),
-                "range_pos":  round(range_pos, 1),
-                "high52":     round(high52),
-                "low52":      round(low52),
-            })
-        except Exception:
-            pass
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(_calc_record, meta): meta for meta in universe}
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                records.append(result)
 
     # フィルタ
     result = [r for r in records if r["avg_vol_k"] >= min_volume_k and r["atr14_pct"] <= max_atr_pct]
