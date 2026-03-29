@@ -16,6 +16,10 @@ env/
 .env.*
 *.env
 
+# ユーザーのローカル設定・履歴（個人データのためコミットしない）
+config.json
+plan_history.json
+
 # Streamlit
 .streamlit/secrets.toml
 

@@ -3,11 +3,13 @@
 """
 
 import os
+import json
+from datetime import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 import streamlit as st
 
 # Windows の echo コマンドは UTF-16 で保存するため両方を試みる
-from pathlib import Path
 _env = Path(".env")
 if _env.exists():
     try:
@@ -15,8 +17,41 @@ if _env.exists():
     except UnicodeDecodeError:
         load_dotenv(dotenv_path=_env, encoding="utf-16")
 
+from config import load_config
 from market_data import get_market_safety, screen_stocks
 from trade_advisor import stream_trade_plan
+
+HISTORY_PATH = Path("plan_history.json")
+
+
+def _save_history(
+    vix_info, budget, holding_period, risk_tolerance,
+    review_note, screened_stocks, plan_text
+):
+    """生成した計画を plan_history.json に追記する"""
+    history = []
+    if HISTORY_PATH.exists():
+        try:
+            history = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    history.append({
+        "timestamp":       datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "vix":             vix_info.get("vix"),
+        "vix_level":       vix_info.get("level"),
+        "budget":          budget,
+        "holding_period":  holding_period,
+        "risk_tolerance":  risk_tolerance,
+        "review_note":     review_note,
+        "screened_stocks": screened_stocks,
+        "plan_text":       plan_text,
+    })
+
+    HISTORY_PATH.write_text(
+        json.dumps(history, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
 
 # ── ページ設定 ────────────────────────────────────────────
 st.set_page_config(
@@ -32,29 +67,36 @@ api_key = os.environ.get("ANTHROPIC_API_KEY", "")
 if not api_key:
     st.error(
         "ANTHROPIC_API_KEY が設定されていません。\n\n"
-        "```\nset ANTHROPIC_API_KEY=sk-ant-...\n```"
+        "`.env` ファイルに `ANTHROPIC_API_KEY=sk-ant-...` を記載してください。"
     )
     st.stop()
+
+# ── 設定読み込み ──────────────────────────────────────────
+cfg = load_config()
+screening = cfg["screening_defaults"]
+plan_def  = cfg["plan_defaults"]
 
 # ── サイドバー：スクリーニング設定 ───────────────────────
 with st.sidebar:
     st.header("🔍 スクリーニング設定")
-    st.caption("銘柄を絞り込む条件を設定してください")
+    st.caption("詳細設定は「設定」ページから変更できます")
 
     min_volume = st.slider(
         "最低平均出来高（千株）",
-        min_value=500, max_value=10_000, value=2_000, step=500,
+        min_value=500, max_value=10_000,
+        value=screening["min_volume_k"], step=500,
         help="流動性フィルタ。低すぎると売買しにくい銘柄が混じります",
     )
     max_atr = st.slider(
         "最大ボラティリティ ATR14（%）",
-        min_value=1.0, max_value=8.0, value=4.0, step=0.5,
-        help="ATR14 ÷ 現在値。高いほど値動きが激しい。火事場相場を避けるため低めを推奨",
+        min_value=1.0, max_value=8.0,
+        value=float(screening["max_atr_pct"]), step=0.5,
+        help="ATR14 ÷ 現在値。高いほど値動きが激しい",
     )
     trend = st.radio(
         "トレンドフィルタ（25日MA基準）",
         options=["どちらでも", "上昇中", "下落中"],
-        index=0,
+        index=["どちらでも", "上昇中", "下落中"].index(screening["trend"]),
     )
 
     st.divider()
@@ -67,16 +109,16 @@ with st.spinner("VIX 取得中..."):
     safety = get_market_safety()
 
 level = safety["level"]
-msg   = safety["message"]
-
 if level == "安全":
-    st.success(f"**{level}**　{msg}")
+    st.success(f"**{level}**　{safety['message']}")
 elif level == "注意":
-    st.warning(f"**{level}**　{msg}")
+    st.warning(f"**{level}**　{safety['message']}")
+elif level == "警戒":
+    st.warning(f"**{level}**　{safety['message']}")
 elif level == "危険":
-    st.error(f"**{level}**　{msg}\n\n新規エントリーは見送ることを強く推奨します。")
+    st.error(f"**{level}**　{safety['message']}")
 else:
-    st.info(msg)
+    st.info(safety["message"])
 
 st.divider()
 
@@ -87,8 +129,10 @@ if "watchlist" not in st.session_state:
     st.session_state.watchlist = None
 
 if run_screen:
-    with st.spinner(f"ユニバース全銘柄を取得・スクリーニング中...（30秒ほどかかります）"):
+    universe = cfg["stock_universe"]
+    with st.spinner(f"ユニバース {len(universe)} 銘柄を取得・スクリーニング中...（30秒ほどかかります）"):
         st.session_state.watchlist = screen_stocks(
+            universe=universe,
             min_volume_k=min_volume,
             max_atr_pct=max_atr,
             trend=trend,
@@ -110,11 +154,11 @@ else:
         use_container_width=True,
         hide_index=True,
         column_config={
-            "現在値":          st.column_config.NumberColumn(format="¥%d"),
-            "前日比率(%)":     st.column_config.NumberColumn(format="%+.1f%%"),
-            "ATR14(%)":       st.column_config.NumberColumn(format="%.2f%%"),
-            "MA25乖離(%)":    st.column_config.NumberColumn(format="%+.1f%%"),
-            "52週レンジ位置(%)": st.column_config.NumberColumn(format="%.0f%%"),
+            "現在値":             st.column_config.NumberColumn(format="¥%d"),
+            "前日比率(%)":        st.column_config.NumberColumn(format="%+.1f%%"),
+            "ATR14(%)":          st.column_config.NumberColumn(format="%.2f%%"),
+            "MA25乖離(%)":       st.column_config.NumberColumn(format="%+.1f%%"),
+            "52週レンジ位置(%)":  st.column_config.NumberColumn(format="%.0f%%"),
         },
     )
 
@@ -135,20 +179,25 @@ with st.form("plan_form"):
         budget = st.number_input(
             "💰 本日の利用可能予算（円）",
             min_value=10_000, max_value=5_000_000,
-            value=100_000, step=10_000, format="%d",
+            value=plan_def["budget"], step=10_000, format="%d",
         )
         holding_period = st.selectbox(
             "⏱️ 保有期間の目安",
             ["数日〜1週間", "数週間〜1ヶ月", "デイトレード（当日中）"],
+            index=["数日〜1週間", "数週間〜1ヶ月", "デイトレード（当日中）"].index(
+                plan_def["holding_period"]
+            ) if plan_def["holding_period"] in ["数日〜1週間", "数週間〜1ヶ月", "デイトレード（当日中）"] else 0,
         )
     with col_r:
+        options = [
+            "低め（損切り -3% を基準）",
+            "中程度（損切り -5% を基準）",
+            "高め（損切り -8% を基準）",
+        ]
         risk_tolerance = st.selectbox(
             "⚖️ リスク許容度",
-            [
-                "低め（損切り -3% を基準）",
-                "中程度（損切り -5% を基準）",
-                "高め（損切り -8% を基準）",
-            ],
+            options,
+            index=options.index(plan_def["risk_tolerance"]) if plan_def["risk_tolerance"] in options else 1,
         )
 
     submitted = st.form_submit_button(
@@ -162,13 +211,32 @@ if submitted:
     if not safety["safe"]:
         st.warning("VIX が極めて高い状態です。計画は生成しますが、AI の判断を参考にしつつ慎重に判断してください。")
     st.markdown("---")
-    st.write_stream(
-        stream_trade_plan(
+
+    plan_chunks = []
+
+    def _collecting_stream():
+        """ストリームを表示しながらテキストを収集する"""
+        for chunk in stream_trade_plan(
             budget=int(budget),
             watchlist=st.session_state.watchlist,
             holding_period=holding_period,
             risk_tolerance=risk_tolerance,
             review_note=review_note,
             vix_info=safety,
-        )
+        ):
+            plan_chunks.append(chunk)
+            yield chunk
+
+    st.write_stream(_collecting_stream())
+
+    # 生成履歴に保存
+    plan_text = "".join(plan_chunks)
+    _save_history(
+        vix_info=safety,
+        budget=int(budget),
+        holding_period=holding_period,
+        risk_tolerance=risk_tolerance,
+        review_note=review_note,
+        screened_stocks=st.session_state.watchlist["銘柄名"].tolist(),
+        plan_text=plan_text,
     )
