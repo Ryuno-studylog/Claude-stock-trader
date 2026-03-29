@@ -26,19 +26,19 @@
     },
     "pricing": {
       "title": "Simple Pricing",
-      "free": { "name": "Free", "price": "$0", "desc": "3 free runs, no card required" },
-      "credits": { "name": "Credits", "price": "$3 / 5 runs", "desc": "Pay as you go, never expires" },
-      "monthly": { "name": "Monthly", "price": "$9 / mo", "desc": "Unlimited runs, cancel anytime" }
+      "free":    { "name": "Free",    "price": "$0",       "desc": "3 free runs, no card required" },
+      "credits": { "name": "Credits", "price": "$1 / 5 runs", "desc": "Pay as you go, never expires" },
+      "monthly": { "name": "Monthly", "price": "$3 / mo",  "desc": "Unlimited runs, cancel anytime" }
     }
   },
   "dashboard": {
     "title": "Tomorrow's Trade Plan",
     "safety": {
       "title": "Market Safety Check",
-      "safe": "Safe",
+      "safe":    "Safe",
       "caution": "Caution",
       "warning": "Warning",
-      "danger": "Danger",
+      "danger":  "Danger",
       "unknown": "Unknown"
     },
     "screening": {
@@ -75,6 +75,46 @@
       "remaining": "{{count}} runs left",
       "buy": "Buy credits"
     }
+  },
+  "glossary": {
+    "hide": "Close",
+    "vix_what": "What is VIX?",
+    "vix_title": "What is VIX (Fear Index)?",
+    "vix_desc": "VIX measures expected volatility in the US stock market. It strongly affects Japanese stocks too. A higher VIX means more fear and uncertainty among market participants.",
+    "vix_safe_label":    "Below 20 — Safe",
+    "vix_safe_desc":     "Markets are calm. Normal entries are fine",
+    "vix_caution_label": "20–30 — Caution",
+    "vix_caution_desc":  "Somewhat unstable. Keep position sizes smaller",
+    "vix_warning_label": "30–40 — Warning",
+    "vix_warning_desc":  "High volatility. Only low-ATR stocks with minimal exposure",
+    "vix_danger_label":  "40+ — Danger",
+    "vix_danger_desc":   "Panic market. Avoid all new entries",
+    "screening_desc": "Screen stocks first, then generate your plan. ATR (volatility) and volume filters keep only stable, tradeable candidates.",
+    "col_code":       "Stock code — the ticker number on the Tokyo Stock Exchange (e.g. 7203 = Toyota)",
+    "col_name":       "Company name",
+    "col_sector":     "Industry sector (e.g. Automotive, Banking, Tech)",
+    "col_price":      "Latest closing price (¥)",
+    "col_day_change": "Percentage change from previous day's close. Positive = up, negative = down",
+    "col_avg_vol":    "Average daily trading volume over the past 20 days (thousands of shares). Higher = more liquid, easier to fill orders",
+    "col_atr14":      "ATR14 (Average True Range, 14 days) — the average daily price range as a % of current price. Lower = more stable, stop-loss levels work better",
+    "col_ma25":       "Deviation from the 25-day moving average. Positive (green) = above MA25 (uptrend signal), negative (red) = below MA25",
+    "col_range":      "Where the current price sits within the past 52-week range. 0% = near 52-week low, 100% = near 52-week high",
+    "show_glossary":  "Learn what these metrics mean ▼",
+    "hide_glossary":  "Hide ▲",
+    "term_atr14_label":        "ATR14 (Average True Range)",
+    "term_atr14_desc":         "The average daily high-to-low range over the past 14 days, expressed as a percentage of the current price. Example: ATR=2% means the stock typically moves about 2% per day. Lower ATR = more predictable moves and more reliable stop-loss levels.",
+    "term_ma25_label":         "MA25 Deviation (25-day Moving Average)",
+    "term_ma25_desc":          "The difference between the current price and the 25-day average price, as a percentage. Positive = trading above average (uptrend signal). Negative = trading below average. Extreme values may indicate overextension.",
+    "term_range_label":        "52-Week Range Position",
+    "term_range_desc":         "Where the current price sits between the 52-week low (0%) and high (100%). Mid-range (30–60%) is generally safer. Near 100% means the stock is at yearly highs — chasing can be risky.",
+    "term_vol_label":          "Average Volume",
+    "term_vol_desc":           "Average daily trading volume (in thousands of shares) over the last 20 days. Higher volume = more active trading = easier to fill your limit orders. Low-volume stocks may leave orders unfilled.",
+    "term_day_change_g_label":  "Day Change (%)",
+    "term_day_change_g_desc":   "Percentage change from the previous close to the current close. +2% means the stock rose 2%, -3% means it fell 3%. Large moves often continue into the next day.",
+    "plan_desc": "AI generates tomorrow's limit and stop-loss order prices based on your screened stocks. Review the plan, then set your orders at your broker before market open.",
+    "plan_result_title": "Tomorrow's Trade Plan",
+    "plan_result_note":  "AI suggestions — final decisions are yours",
+    "plan_disclaimer":   "⚠ This plan is AI-generated information only and does not constitute investment advice. All trading decisions are your own responsibility."
   },
   "history": {
     "title": "Plan History",
