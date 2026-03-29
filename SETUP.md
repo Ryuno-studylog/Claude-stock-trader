@@ -179,12 +179,42 @@ npm run dev
 ## STEP 5 — デプロイ
 
 ### 5-1. Railway（バックエンド）
-1. https://railway.app → GitHubログイン
-2. **New Project → Deploy from GitHub repo** → このリポジトリを選択
-3. **Settings → Environment** に `backend/.env` の中身をすべて入力
-4. **Settings → Start command**: `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
-5. デプロイ完了後、発行されたURLを控える（例: `https://nightly-edge.railway.app`）
-6. `backend/.env` の `FRONTEND_URL` をVercelのURLに更新（Vercel設定後）
+
+#### アカウント作成・プロジェクト作成
+1. https://railway.app → **Login with GitHub**
+2. **New Project → Deploy from GitHub repo** → `Claude-stock-trader` を選択
+3. **Add variables** と聞かれたらとりあえずスキップ（後で設定する）
+
+#### Environment Variables を設定
+1. プロジェクトが作成されたら、サービス（デプロイされたボックス）をクリック
+2. 上部タブ **Variables** を開く
+3. **New Variable** を1つずつ追加（Key と Value を入力して Enter）：
+
+| Key | Value（どこから取得するか） |
+|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic Console → API Keys |
+| `SUPABASE_URL` | Supabase → Settings → API → Project URL |
+| `SUPABASE_SERVICE_KEY` | Supabase → Settings → API → `service_role` キー |
+| `STRIPE_SECRET_KEY` | Stripe → Developers → API keys → Secret key |
+| `STRIPE_WEBHOOK_SECRET` | ⚠️ デプロイ後に設定（今は空でOK） |
+| `STRIPE_CREDITS_PRICE_ID` | Stripe → Products → Credits商品 → Price ID |
+| `STRIPE_MONTHLY_PRICE_ID` | Stripe → Products → Monthly商品 → Price ID |
+| `FRONTEND_URL` | ⚠️ Vercelデプロイ後に設定（今は `http://localhost:3000` で仮置き） |
+
+#### Start Command を設定
+1. 上部タブ **Settings** を開く
+2. **Deploy** セクション → **Start Command** に以下を入力：
+   ```
+   cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+   ```
+3. 自動的に再デプロイが始まる
+
+#### デプロイ確認
+1. 上部タブ **Deployments** → 最新のデプロイをクリック
+2. ログに `Uvicorn running on ...` が出ればOK
+3. 上部タブ **Settings → Networking → Generate Domain** でURLを発行
+4. 発行されたURL（例: `https://nightly-edge-production.up.railway.app`）を控える
+5. このURLの末尾に `/health` をつけてブラウザで開き `{"status":"ok"}` が返ればOK
 
 ### 5-2. Vercel（フロントエンド）
 1. https://vercel.com → GitHubログイン
