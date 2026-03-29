@@ -25,7 +25,8 @@ export default function DashboardPage() {
   const [profile,   setProfile]   = useState<{ credits: number; plan: string; language: string } | null>(null);
   const [safety,    setSafety]    = useState<{ level: string; message: string; vix: number | null } | null>(null);
   const [stocks,    setStocks]    = useState<object[] | null>(null);
-  const [screening, setScreening] = useState(false);
+  const [screening,     setScreening]     = useState(false);
+  const [screenError,   setScreenError]   = useState("");
 
   // スクリーニング設定
   const [minVol,  setMinVol]  = useState(2000);
@@ -62,10 +63,13 @@ export default function DashboardPage() {
   const runScreening = async () => {
     setScreening(true);
     setStocks(null);
+    setScreenError("");
     try {
       const res = await fetchScreen({ min_volume_k: minVol, max_atr_pct: maxAtr, trend });
       setStocks(res.stocks);
-    } catch {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setScreenError(msg);
       setStocks([]);
     } finally {
       setScreening(false);
@@ -161,6 +165,9 @@ export default function DashboardPage() {
           </button>
 
           {/* 結果テーブル */}
+          {screenError && (
+            <p className="mt-4 text-sm text-red-400 break-all">Error: {screenError}</p>
+          )}
           {stocks !== null && (
             stocks.length === 0
               ? <p className="mt-4 text-sm text-gray-500">{t("screening.no_result")}</p>

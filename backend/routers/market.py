@@ -91,3 +91,19 @@ def debug3():
         for r in ex.map(_calc_record, DEFAULT_UNIVERSE[:3]):
             results.append(r)
     return {"results": results}
+
+
+@router.get("/debug4")
+def debug4():
+    """screen_stocks をフィルタ全解除・3銘柄で実行（認証不要）"""
+    from services.market_data import screen_stocks, DEFAULT_UNIVERSE
+    try:
+        result = screen_stocks(
+            universe=DEFAULT_UNIVERSE[:3],
+            min_volume_k=0,
+            max_atr_pct=100.0,
+            trend="any",
+        )
+        return {"count": len(result), "stocks": result}
+    except Exception as e:
+        return {"error": str(e), "trace": traceback.format_exc()}
