@@ -1,0 +1,124 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "history": "History",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login"
+  },
+  "landing": {
+    "headline": "Plan tomorrow's trades in 5 minutes tonight.",
+    "subheadline": "AI screens Japanese stocks and suggests limit/stop-loss orders — ready to set before market open.",
+    "cta": "Start free (3 runs)",
+    "features": {
+      "screening": {
+        "title": "ATR Screening",
+        "desc": "Automatically filter stocks by volatility, volume, and trend"
+      },
+      "safety": {
+        "title": "Panic Market Detection",
+        "desc": "VIX-based warnings prevent entries during crisis markets"
+      },
+      "plan": {
+        "title": "Concrete Order Prices",
+        "desc": "Specific limit and stop-loss prices with share counts — just set and sleep"
+      }
+    },
+    "pricing": {
+      "title": "Simple Pricing",
+      "free": { "name": "Free", "price": "$0", "desc": "3 free runs, no card required" },
+      "credits": { "name": "Credits", "price": "$3 / 5 runs", "desc": "Pay as you go, never expires" },
+      "monthly": { "name": "Monthly", "price": "$9 / mo", "desc": "Unlimited runs, cancel anytime" }
+    }
+  },
+  "dashboard": {
+    "title": "Tomorrow's Trade Plan",
+    "safety": {
+      "title": "Market Safety Check",
+      "safe": "Safe",
+      "caution": "Caution",
+      "warning": "Warning",
+      "danger": "Danger",
+      "unknown": "Unknown"
+    },
+    "screening": {
+      "title": "Stock Screening",
+      "run": "Run Screening",
+      "running": "Fetching data...",
+      "min_volume": "Min avg volume (k shares)",
+      "max_atr": "Max ATR14 (%)",
+      "trend": "Trend filter",
+      "trend_any": "Any",
+      "trend_up": "Uptrend",
+      "trend_down": "Downtrend",
+      "result": "{{count}} stocks passed (sorted by ATR)",
+      "no_result": "No stocks matched. Try relaxing the filters.",
+      "hint": "Run screening first"
+    },
+    "plan_form": {
+      "title": "Build Tomorrow's Plan",
+      "review": "Yesterday's review (optional)",
+      "review_placeholder": "e.g. Bought Toyota at ¥3,200, sold at ¥3,280. Next time I'll set stop-loss before entering.",
+      "budget": "Available budget (¥)",
+      "period": "Holding period",
+      "period_week": "Days to 1 week",
+      "period_month": "Weeks to 1 month",
+      "period_day": "Day trade",
+      "risk": "Risk tolerance",
+      "risk_low": "Low (stop-loss -3%)",
+      "risk_mid": "Medium (stop-loss -5%)",
+      "risk_high": "High (stop-loss -8%)",
+      "submit": "Generate Plan",
+      "generating": "Generating..."
+    },
+    "credits": {
+      "remaining": "{{count}} runs left",
+      "buy": "Buy credits"
+    }
+  },
+  "history": {
+    "title": "Plan History",
+    "empty": "No plans generated yet",
+    "vix": "VIX",
+    "budget": "Budget",
+    "stocks": "Stocks",
+    "delete_all": "Delete all history"
+  },
+  "settings": {
+    "title": "Settings",
+    "universe": {
+      "title": "Stock Universe",
+      "desc": "Manage which stocks are included in screening.",
+      "add": "Add stock",
+      "code": "Code",
+      "ticker": "Ticker (e.g. 7203.T)",
+      "name": "Name",
+      "sector": "Sector"
+    },
+    "screening": {
+      "title": "Screening Defaults"
+    },
+    "plan": {
+      "title": "Plan Defaults"
+    },
+    "language": {
+      "title": "Language",
+      "ja": "日本語",
+      "en": "English"
+    },
+    "save": "Save",
+    "saved": "Saved!"
+  },
+  "auth": {
+    "login_title": "Log in",
+    "signup_title": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "login_btn": "Log in",
+    "signup_btn": "Create account",
+    "google": "Continue with Google",
+    "switch_signup": "Don't have an account?",
+    "switch_login": "Already have an account?",
+    "terms": "By signing up, you agree to our Terms and Privacy Policy"
+  }
+}

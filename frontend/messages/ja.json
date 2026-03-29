@@ -1,0 +1,124 @@
+{
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "history": "履歴",
+    "settings": "設定",
+    "logout": "ログアウト",
+    "login": "ログイン"
+  },
+  "landing": {
+    "headline": "夜5分で翌日の売買計画を。",
+    "subheadline": "AIが日本株をスクリーニングし、翌朝の指値・逆指値注文を提案します。",
+    "cta": "無料で始める（3回）",
+    "features": {
+      "screening": {
+        "title": "ATRスクリーニング",
+        "desc": "ボラティリティ・出来高・トレンドで銘柄を自動絞り込み"
+      },
+      "safety": {
+        "title": "火事場検知",
+        "desc": "VIXが高い相場では警告を表示。パニック相場でのエントリーを防ぐ"
+      },
+      "plan": {
+        "title": "具体的な注文価格",
+        "desc": "指値・逆指値の価格を株数つきで提案。朝は設定するだけ"
+      }
+    },
+    "pricing": {
+      "title": "シンプルな料金プラン",
+      "free": { "name": "無料", "price": "¥0", "desc": "3回まで無料で試せます" },
+      "credits": { "name": "クレジット", "price": "$3 / 5回", "desc": "都度買い切り。期限なし" },
+      "monthly": { "name": "月額", "price": "$9 / 月", "desc": "使い放題。いつでもキャンセル可" }
+    }
+  },
+  "dashboard": {
+    "title": "翌日売買計画",
+    "safety": {
+      "title": "市場安全チェック",
+      "safe": "安全",
+      "caution": "注意",
+      "warning": "警戒",
+      "danger": "危険",
+      "unknown": "不明"
+    },
+    "screening": {
+      "title": "銘柄スクリーニング",
+      "run": "スクリーニング実行",
+      "running": "取得中...",
+      "min_volume": "最低出来高（千株）",
+      "max_atr": "最大ATR14（%）",
+      "trend": "トレンドフィルタ",
+      "trend_any": "どちらでも",
+      "trend_up": "上昇中",
+      "trend_down": "下落中",
+      "result": "{{count}}銘柄が通過（ATR低い順）",
+      "no_result": "条件に合う銘柄がありません。条件を緩めてください。",
+      "hint": "先にスクリーニングを実行してください"
+    },
+    "plan_form": {
+      "title": "翌日の売買計画を立てる",
+      "review": "昨日の振り返り（任意）",
+      "review_placeholder": "例：7203を3,200円で買い、3,280円で利確。次回は損切りラインを先に決める。",
+      "budget": "利用可能予算（円）",
+      "period": "保有期間の目安",
+      "period_week": "数日〜1週間",
+      "period_month": "数週間〜1ヶ月",
+      "period_day": "デイトレード（当日中）",
+      "risk": "リスク許容度",
+      "risk_low": "低め（損切り -3%）",
+      "risk_mid": "中程度（損切り -5%）",
+      "risk_high": "高め（損切り -8%）",
+      "submit": "翌日計画を生成する",
+      "generating": "生成中..."
+    },
+    "credits": {
+      "remaining": "残り{{count}}回",
+      "buy": "クレジット購入"
+    }
+  },
+  "history": {
+    "title": "生成履歴",
+    "empty": "まだ計画が生成されていません",
+    "vix": "VIX",
+    "budget": "予算",
+    "stocks": "対象銘柄",
+    "delete_all": "履歴をすべて削除"
+  },
+  "settings": {
+    "title": "設定",
+    "universe": {
+      "title": "銘柄ユニバース",
+      "desc": "スクリーニング対象の銘柄を管理します。行を追加・削除・編集できます。",
+      "add": "銘柄を追加",
+      "code": "証券コード",
+      "ticker": "Ticker（例: 7203.T）",
+      "name": "銘柄名",
+      "sector": "セクター"
+    },
+    "screening": {
+      "title": "スクリーニングのデフォルト"
+    },
+    "plan": {
+      "title": "プランのデフォルト"
+    },
+    "language": {
+      "title": "表示言語",
+      "ja": "日本語",
+      "en": "English"
+    },
+    "save": "保存する",
+    "saved": "保存しました"
+  },
+  "auth": {
+    "login_title": "ログイン",
+    "signup_title": "アカウント作成",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "login_btn": "ログイン",
+    "signup_btn": "アカウント作成",
+    "google": "Googleで続ける",
+    "switch_signup": "アカウントをお持ちでない方",
+    "switch_login": "すでにアカウントをお持ちの方",
+    "terms": "利用規約とプライバシーポリシーに同意して登録します"
+  }
+}
