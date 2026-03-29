@@ -2,13 +2,16 @@
 市場データ関連エンドポイント
 GET  /api/market/safety  — VIXチェック
 POST /api/market/screen  — 銘柄スクリーニング
+GET  /api/market/debug   — 1銘柄の生データ確認（デバッグ用）
 """
 
+import traceback
+import yfinance as yf
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from services.market_data import get_market_safety, screen_stocks, DEFAULT_UNIVERSE
-from services.supabase_client import verify_token, get_user_settings
+from services.supabase_client import get_user_settings
 from .deps import get_current_user
 
 router = APIRouter(prefix="/api/market")
@@ -45,3 +48,26 @@ def screen(req: ScreenRequest, user: dict = Depends(get_current_user)):
         trend=req.trend,
     )
     return {"stocks": result, "total": len(result)}
+
+
+@router.get("/debug")
+def debug():
+    """
+    トヨタ1銘柄でデータ取得を試みて生データを返す（デバッグ用・認証不要）
+    問題の切り分け：yfinanceが動いているか / フィルタで弾かれているか
+    """
+    try:
+        hist = yf.Ticker("7203.T").history(period="5d", auto_adjust=True)
+        if hist.empty:
+            return {"status": "empty", "detail": "yfinance returned empty DataFrame"}
+
+        latest = hist.iloc[-1]
+        return {
+            "status":  "ok",
+            "rows":    len(hist),
+            "close":   float(latest["Close"]),
+            "volume":  int(latest["Volume"]),
+            "columns": list(hist.columns),
+        }
+    except Exception as e:
+        return {"status": "error", "detail": str(e), "trace": traceback.format_exc()}
