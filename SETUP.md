@@ -231,6 +231,73 @@ npm run dev
 
 ---
 
+## STEP 6 — 本番化
+
+テストモードで動作確認できたら本番に切り替えます。
+
+### 6-1. Stripe を本番モードに切り替える
+1. Stripe ダッシュボード右上の **「テスト」トグルをOFF**（本番モードへ）
+2. **Developers → API keys** から本番用キーを控える：
+   - `pk_live_...`（Publishable key）
+   - `sk_live_...`（Secret key）
+3. **Products** で改めて2商品を作成（本番モードでは別IDになる）：
+   - `Nightly Edge Credits` → $3.00 one-time → Price ID控える
+   - `Nightly Edge Monthly` → $9.00/month → Price ID控える
+4. **Webhookも本番用を追加**（テスト用とは別）：
+   - Endpoint URL: `https://your-railway-app.railway.app/api/billing/webhook`
+   - イベント: `checkout.session.completed`, `customer.subscription.deleted`
+   - Signing secret（`whsec_live_...`）を控える
+
+### 6-2. カスタムドメインを取得する（任意だが推奨）
+ドメインがあると信頼感が上がり、コンバージョン率が改善します。
+
+- 取得場所: お名前.com / Cloudflare Registrar（安い）/ Namecheap
+- 推奨例: `nightly-edge.app` / `nightlyedge.io` など
+- **Vercel にカスタムドメインを設定**：
+  1. Vercel → プロジェクト → **Settings → Domains** → ドメインを追加
+  2. 指示に従ってDNSレコードを設定（Aレコードまたは CNAME）
+
+### 6-3. Railway・Vercel の環境変数を本番用に更新
+
+**Railway（バックエンド）** の Variables を更新：
+
+| Key | 本番の値 |
+|---|---|
+| `STRIPE_SECRET_KEY` | `sk_live_...` に変更 |
+| `STRIPE_WEBHOOK_SECRET` | 本番Webhookの `whsec_live_...` に変更 |
+| `STRIPE_CREDITS_PRICE_ID` | 本番の Price ID に変更 |
+| `STRIPE_MONTHLY_PRICE_ID` | 本番の Price ID に変更 |
+| `FRONTEND_URL` | カスタムドメインまたは Vercel の本番URL |
+
+**Vercel（フロントエンド）** の Environment Variables を更新：
+
+| Key | 本番の値 |
+|---|---|
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` に変更 |
+| `NEXT_PUBLIC_STRIPE_CREDITS_PRICE_ID` | 本番の Price ID に変更 |
+| `NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID` | 本番の Price ID に変更 |
+
+→ 変更後 Railway は自動再デプロイ、Vercel は **Redeploy** を手動で実行
+
+### 6-4. Supabase の URL を本番ドメインに更新
+1. **Authentication → URL Configuration**
+   - **Site URL**: 本番ドメイン（例: `https://nightly-edge.app`）
+   - **Redirect URLs**: 本番ドメイン + `/auth/callback` を追加
+2. Google OAuth を使っている場合、GCC の「承認済みリダイレクト URI」に本番URLも追加（STEP 1-5 D項）
+
+### 6-5. 本番化チェックリスト
+- [ ] Stripe 本番モードに切り替え・本番キー取得
+- [ ] 本番用商品2つ作成・Price ID取得
+- [ ] 本番用 Webhook 設定・Signing secret取得
+- [ ] カスタムドメイン取得・Vercel に設定（任意）
+- [ ] Railway の環境変数を本番用に更新
+- [ ] Vercel の環境変数を本番用に更新して Redeploy
+- [ ] Supabase の Site URL を本番ドメインに更新
+- [ ] Google OAuth のリダイレクトURIに本番URLを追加
+- [ ] テストカードではなく実際のカードで決済が通るか確認
+
+---
+
 ## 完了チェックリスト
 
 - [ ] Supabase: プロジェクト作成・APIキー取得
