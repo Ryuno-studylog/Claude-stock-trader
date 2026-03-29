@@ -52,15 +52,11 @@ def screen(req: ScreenRequest, user: dict = Depends(get_current_user)):
 
 @router.get("/debug")
 def debug():
-    """
-    トヨタ1銘柄でデータ取得を試みて生データを返す（デバッグ用・認証不要）
-    問題の切り分け：yfinanceが動いているか / フィルタで弾かれているか
-    """
+    """トヨタ1銘柄の生データ確認（認証不要）"""
     try:
         hist = yf.Ticker("7203.T").history(period="5d", auto_adjust=True)
         if hist.empty:
-            return {"status": "empty", "detail": "yfinance returned empty DataFrame"}
-
+            return {"status": "empty"}
         latest = hist.iloc[-1]
         return {
             "status":  "ok",
@@ -71,3 +67,27 @@ def debug():
         }
     except Exception as e:
         return {"status": "error", "detail": str(e), "trace": traceback.format_exc()}
+
+
+@router.get("/debug2")
+def debug2():
+    """_calc_record をトヨタで直接実行して結果を返す（認証不要）"""
+    from services.market_data import _calc_record, DEFAULT_UNIVERSE
+    meta = DEFAULT_UNIVERSE[0]  # トヨタ
+    try:
+        result = _calc_record(meta)
+        return {"meta": meta, "result": result}
+    except Exception as e:
+        return {"meta": meta, "result": None, "error": str(e), "trace": traceback.format_exc()}
+
+
+@router.get("/debug3")
+def debug3():
+    """フィルタなしで最初の3銘柄を取得して返す（認証不要）"""
+    from services.market_data import _calc_record, DEFAULT_UNIVERSE
+    from concurrent.futures import ThreadPoolExecutor
+    results = []
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        for r in ex.map(_calc_record, DEFAULT_UNIVERSE[:3]):
+            results.append(r)
+    return {"results": results}
