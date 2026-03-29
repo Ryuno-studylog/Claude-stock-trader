@@ -26,7 +26,37 @@
 2. `supabase/migrations/001_init.sql` の中身を**まるごとコピペ**して **Run**
 3. エラーが出なければOK
 
-### 1-4. Google OAuth を有効化（任意・後回しでもOK）
+### 1-4. セキュリティ初期設定（必須）
+
+**Authentication → Settings** を開いて以下を確認・変更：
+
+| 項目 | 設定値 | 理由 |
+|---|---|---|
+| Enable email confirmations | **ON** | 野良アカウント作成を防ぐ |
+| Minimum password length | **8以上** | 弱いパスワードを弾く |
+| Site URL | `http://localhost:3000`（後で本番URLに変更） | OAuthリダイレクト先 |
+
+**Authentication → Rate Limits** はデフォルトでON（そのままでOK）
+
+**Database → Tables** を開いて、以下の4テーブルに `RLS enabled` のバッジがついていることを確認：
+- `profiles`
+- `user_settings`
+- `plan_history`
+
+ついていない場合は SQL Editor で下記を実行：
+```sql
+alter table public.profiles      enable row level security;
+alter table public.user_settings enable row level security;
+alter table public.plan_history  enable row level security;
+```
+
+**⚠️ キーの使い分け（絶対守る）**
+- `anon` キー → フロントエンドのみ（RLSで保護されるので公開OK）
+- `service_role` キー → バックエンドの環境変数のみ（RLSをバイパスするため絶対に公開しない）
+
+---
+
+### 1-5. Google OAuth を有効化（任意・後回しでもOK）
 1. **Authentication → Providers → Google** をON
 2. Google Cloud Console (https://console.cloud.google.com) で OAuth クライアントIDを発行
 3. Client ID と Secret を Supabase に貼る
