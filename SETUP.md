@@ -57,10 +57,36 @@ alter table public.plan_history  enable row level security;
 ---
 
 ### 1-5. Google OAuth を有効化（任意・後回しでもOK）
-1. **Authentication → Providers → Google** をON
-2. Google Cloud Console (https://console.cloud.google.com) で OAuth クライアントIDを発行
-3. Client ID と Secret を Supabase に貼る
-4. 承認済みリダイレクトURIに `https://xxxx.supabase.co/auth/v1/callback` を追加
+
+#### A. Supabase 側で Callback URL を確認
+1. **Authentication → Providers → Google** を開く
+2. ページ上部に表示されている **Callback URL** をコピーしておく
+   - 形式: `https://xxxxxxxxxxxx.supabase.co/auth/v1/callback`
+
+#### B. Google Cloud Console 側の設定
+1. https://console.cloud.google.com にアクセス（Googleアカウントでログイン）
+2. 画面上部のプロジェクト選択 → **新しいプロジェクト** → 名前: `nightly-edge` → 作成
+3. 左メニュー **APIとサービス → OAuth同意画面**
+   - User Type: **外部** を選択 → 作成
+   - アプリ名: `Nightly Edge`、サポートメール: 自分のメール
+   - **スコープは追加しない**（デフォルトのままでOK）
+   - テストユーザーに自分のメールアドレスを追加 → 保存
+4. 左メニュー **APIとサービス → 認証情報 → 認証情報を作成 → OAuthクライアントID**
+   - アプリケーションの種類: **ウェブアプリケーション**
+   - 名前: `nightly-edge-web`
+   - **承認済みのリダイレクト URI** → 「URIを追加」
+     - A でコピーした Supabase の Callback URL を貼る
+   - 作成
+5. 表示される **クライアントID** と **クライアントシークレット** をコピー
+
+#### C. Supabase 側に貼り付ける
+1. Supabase の **Authentication → Providers → Google** に戻る
+2. **Client ID**（GCCのクライアントID）と **Client Secret**（GCCのクライアントシークレット）を貼る
+3. **Enable Google provider** をON → Save
+
+#### D. 本番デプロイ後に追加が必要
+Vercel のURLが決まったら、GCC の「承認済みのリダイレクト URI」に本番用も追加する：
+- `https://your-vercel-app.vercel.app/auth/callback`（フロントエンドのコールバック用）
 
 ---
 
