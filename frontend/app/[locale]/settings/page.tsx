@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import { fetchUserSettings, saveUserSettings, createCheckout, fetchBillingPortal, fetchProfile } from "@/lib/api";
 
@@ -13,8 +13,10 @@ interface StockEntry { 証券コード: string; ticker: string; 銘柄名: strin
 export default function SettingsPage() {
   const t      = useTranslations("settings");
   const locale = useLocale();
-  const router = useRouter();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
 
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [profile,    setProfile]    = useState<{ credits: number; plan: string } | null>(null);
   const [universe,   setUniverse]   = useState<StockEntry[]>([]);
   const [minVol,     setMinVol]     = useState(2000);
@@ -26,6 +28,11 @@ export default function SettingsPage() {
   const [portaling,  setPortaling]  = useState(false);
 
   useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      setCheckoutSuccess(true);
+      // URLからクエリパラメータを消す
+      router.replace(`/${locale}/settings`);
+    }
     fetchProfile().then(setProfile).catch(() => {});
     fetchUserSettings().then((s: { stock_universe?: StockEntry[]; screening_defaults?: { min_volume_k: number; max_atr_pct: number; trend: string }; plan_defaults?: { budget: number } }) => {
       if (s.stock_universe)     setUniverse(s.stock_universe);
@@ -82,6 +89,12 @@ export default function SettingsPage() {
       <Header />
       <main className="max-w-4xl mx-auto w-full px-4 py-6 space-y-8">
         <h1 className="text-xl font-bold">{t("title")}</h1>
+
+        {checkoutSuccess && (
+          <div className="bg-green-900 border border-green-700 text-green-200 rounded-lg px-4 py-3 text-sm">
+            {locale === "ja" ? "決済が完了しました。ご購入ありがとうございます！" : "Payment successful! Thank you for your purchase."}
+          </div>
+        )}
 
         {/* 課金 */}
         {profile && (

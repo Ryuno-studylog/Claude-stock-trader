@@ -44,8 +44,8 @@ def create_checkout(req: CheckoutRequest, user: dict = Depends(get_current_user)
         payment_method_types=["card"],
         mode=mode,
         line_items=[{"price": req.price_id, "quantity": 1}],
-        success_url=f"{FRONTEND_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{FRONTEND_URL}/billing/cancel",
+        success_url=f"{FRONTEND_URL}/settings?checkout=success",
+        cancel_url=f"{FRONTEND_URL}/settings",
         metadata={"user_id": user["id"]},
     )
     return {"url": session.url}
