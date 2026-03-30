@@ -58,8 +58,8 @@ export default function SettingsPage() {
     try {
       const { url } = await createCheckout(priceId);
       window.location.href = url;
-    } catch {
-      alert("Checkout failed");
+    } catch (e: unknown) {
+      alert("Checkout failed: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setBuying(false);
     }
