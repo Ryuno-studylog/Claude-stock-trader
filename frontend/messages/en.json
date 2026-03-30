@@ -28,7 +28,7 @@
       "title": "Simple Pricing",
       "free":    { "name": "Free",    "price": "$0",       "desc": "3 free runs, no card required" },
       "credits": { "name": "Credits", "price": "$1 / 5 runs", "desc": "Pay as you go, never expires" },
-      "monthly": { "name": "Monthly", "price": "$3 / mo",  "desc": "Unlimited runs, cancel anytime" }
+      "monthly": { "name": "Monthly", "price": "$3 / mo",  "desc": "3 runs/day, cancel anytime" }
     }
   },
   "dashboard": {

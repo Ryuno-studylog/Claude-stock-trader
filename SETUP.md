@@ -104,12 +104,12 @@ Vercel のURLが決まったら、GCC の「承認済みのリダイレクト UR
 
 **商品①**
 - Name: `Nightly Edge Credits`
-- Pricing: One-time / $3.00 USD
+- Pricing: One-time / $1.00 USD
 - → 作成後、Price IDを控える（`price_...`）→ backend/.env の `STRIPE_CREDITS_PRICE_ID`
 
 **商品②**
 - Name: `Nightly Edge Monthly`
-- Pricing: Recurring / $9.00 USD / Monthly
+- Pricing: Recurring / $3.00 USD / Monthly
 - → 作成後、Price IDを控える（`price_...`）→ backend/.env の `STRIPE_MONTHLY_PRICE_ID`
 
 ### 2-3. Webhook を設定（デプロイ後に実施）
@@ -241,8 +241,8 @@ npm run dev
    - `pk_live_...`（Publishable key）
    - `sk_live_...`（Secret key）
 3. **Products** で改めて2商品を作成（本番モードでは別IDになる）：
-   - `Nightly Edge Credits` → $3.00 one-time → Price ID控える
-   - `Nightly Edge Monthly` → $9.00/month → Price ID控える
+   - `Nightly Edge Credits` → $1.00 one-time → Price ID控える
+   - `Nightly Edge Monthly` → $3.00/month → Price ID控える
 4. **Webhookも本番用を追加**（テスト用とは別）：
    - Endpoint URL: `https://your-railway-app.railway.app/api/billing/webhook`
    - イベント: `checkout.session.completed`, `customer.subscription.deleted`

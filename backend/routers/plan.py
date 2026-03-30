@@ -10,8 +10,10 @@ from pydantic import BaseModel
 
 from services.trade_advisor import stream_plan_sse
 from services.supabase_client import (
-    get_profile, deduct_credit, save_plan_history
+    get_profile, deduct_credit, save_plan_history, count_today_usage
 )
+
+MONTHLY_DAILY_LIMIT = 3  # 月額プランの1日あたり上限
 from .deps import get_current_user
 
 router = APIRouter(prefix="/api/plan")
@@ -35,8 +37,12 @@ def generate_plan(req: PlanRequest, user: dict = Depends(get_current_user)):
     """
     profile = get_profile(user["id"])
 
-    # クレジット確認（月額プランはスキップ）
-    if profile["plan"] != "monthly" and profile["credits"] <= 0:
+    # クレジット確認
+    if profile["plan"] == "monthly":
+        # 月額プランは1日MONTHLY_DAILY_LIMIT回まで
+        if count_today_usage(user["id"]) >= MONTHLY_DAILY_LIMIT:
+            raise HTTPException(status_code=429, detail="Daily limit reached")
+    elif profile["credits"] <= 0:
         raise HTTPException(status_code=402, detail="Insufficient credits")
 
     # クレジット消費

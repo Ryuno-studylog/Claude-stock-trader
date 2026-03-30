@@ -28,7 +28,7 @@
       "title": "シンプルな料金プラン",
       "free":    { "name": "無料",     "price": "¥0",      "desc": "3回まで無料で試せます" },
       "credits": { "name": "クレジット", "price": "$1 / 5回", "desc": "都度買い切り。期限なし" },
-      "monthly": { "name": "月額",     "price": "$3 / 月",  "desc": "使い放題。いつでもキャンセル可" }
+      "monthly": { "name": "月額",     "price": "$3 / 月",  "desc": "1日3回まで。いつでもキャンセル可" }
     }
   },
   "dashboard": {

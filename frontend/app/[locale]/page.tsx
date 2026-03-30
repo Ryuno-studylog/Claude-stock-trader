@@ -165,9 +165,13 @@ export default function DashboardPage() {
       }
       fetchProfile().then(setProfile).catch(() => {});
     } catch (e: unknown) {
-      if (e instanceof Error && e.message.includes("402")) {
-        alert(locale === "ja" ? "クレジットが不足しています" : "Insufficient credits");
-        router.push(`/${locale}/settings`);
+      if (e instanceof Error) {
+        if (e.message.includes("402")) {
+          alert(locale === "ja" ? "クレジットが不足しています" : "Insufficient credits");
+          router.push(`/${locale}/settings`);
+        } else if (e.message.includes("429")) {
+          alert(locale === "ja" ? "本日の利用上限（3回）に達しました。明日またお試しください。" : "Daily limit reached (3 runs/day). Please try again tomorrow.");
+        }
       }
     } finally {
       setGenerating(false);

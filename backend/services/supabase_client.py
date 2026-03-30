@@ -88,6 +88,21 @@ def save_user_settings(user_id: str, settings: dict) -> None:
     }).execute()
 
 
+def count_today_usage(user_id: str) -> int:
+    """今日（UTC）の計画生成回数を返す"""
+    from datetime import datetime, timezone
+    sb = get_supabase()
+    today = datetime.now(timezone.utc).date().isoformat()  # "2026-03-30"
+    res = (
+        sb.table("plan_history")
+        .select("id", count="exact")
+        .eq("user_id", user_id)
+        .gte("created_at", f"{today}T00:00:00+00:00")
+        .execute()
+    )
+    return res.count or 0
+
+
 def save_plan_history(user_id: str, entry: dict) -> None:
     """生成した計画を履歴テーブルに保存する"""
     sb = get_supabase()
