@@ -125,6 +125,15 @@ export async function fetchHistory() {
 
 // ── 課金 ──────────────────────────────────────────────
 
+export async function fetchBillingPortal() {
+  const res = await fetch(`${API_URL}/api/billing/portal`, {
+    headers: await authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail);
+  return data as { url: string };
+}
+
 export async function createCheckout(price_id: string) {
   const res = await fetch(`${API_URL}/api/billing/checkout`, {
     method: "POST",

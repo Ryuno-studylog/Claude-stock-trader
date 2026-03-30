@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import { fetchUserSettings, saveUserSettings, createCheckout, fetchProfile } from "@/lib/api";
+import { fetchUserSettings, saveUserSettings, createCheckout, fetchBillingPortal, fetchProfile } from "@/lib/api";
 
 const CREDITS_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_CREDITS_PRICE_ID ?? "";
 const MONTHLY_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID ?? "";
@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [budget,     setBudget]     = useState(100000);
   const [saved,      setSaved]      = useState(false);
   const [buying,     setBuying]     = useState(false);
+  const [portaling,  setPortaling]  = useState(false);
 
   useEffect(() => {
     fetchProfile().then(setProfile).catch(() => {});
@@ -64,6 +65,18 @@ export default function SettingsPage() {
     }
   };
 
+  const openPortal = async () => {
+    setPortaling(true);
+    try {
+      const { url } = await fetchBillingPortal();
+      window.location.href = url;
+    } catch {
+      alert("Could not open billing portal. Please try again.");
+    } finally {
+      setPortaling(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -75,18 +88,25 @@ export default function SettingsPage() {
           <section id="billing" className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h2 className="font-semibold mb-3">Plan</h2>
             <p className="text-sm text-gray-400 mb-4">
-              {profile.plan === "monthly" ? "Monthly unlimited" : `${profile.credits} credits remaining`}
+              {profile.plan === "monthly"
+                ? "Monthly plan — 3 runs/day"
+                : `${profile.credits} credits remaining`}
             </p>
             <div className="flex gap-3 flex-wrap">
-              {profile.plan !== "monthly" && (
+              {profile.plan === "monthly" ? (
+                <button disabled={portaling} onClick={openPortal}
+                  className="bg-gray-800 hover:bg-gray-700 disabled:opacity-50 rounded-lg px-4 py-2 text-sm transition">
+                  {portaling ? "Redirecting..." : "Manage / Cancel subscription"}
+                </button>
+              ) : (
                 <>
                   <button disabled={buying} onClick={() => checkout(CREDITS_PRICE_ID)}
                     className="bg-gray-800 hover:bg-gray-700 disabled:opacity-50 rounded-lg px-4 py-2 text-sm transition">
-                    Buy Credits ($3 / 5 runs)
+                    Buy Credits ($1 / 5 runs)
                   </button>
                   <button disabled={buying} onClick={() => checkout(MONTHLY_PRICE_ID)}
                     className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg px-4 py-2 text-sm transition">
-                    Go Monthly ($9/mo)
+                    Go Monthly ($3/mo)
                   </button>
                 </>
               )}

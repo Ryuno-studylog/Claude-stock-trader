@@ -78,8 +78,12 @@ async def stripe_webhook(request: Request):
             # クレジット購入
             add_credits(user_id, CREDITS_PER_PURCHASE)
         elif mode == "subscription":
-            # 月額サブスク開始
+            # 月額サブスク開始 + stripe_customer_id を保存
             set_monthly_plan(user_id, active=True)
+            customer_id = data.get("customer")
+            if customer_id:
+                sb = get_supabase()
+                sb.table("profiles").update({"stripe_customer_id": customer_id}).eq("id", user_id).execute()
 
     elif etype == "customer.subscription.deleted":
         # サブスクキャンセル
