@@ -21,6 +21,11 @@ export default async function LocaleLayout({
       <body className="bg-gray-950 text-gray-100 min-h-screen">
         <NextIntlClientProvider messages={messages}>
           {children}
+          <footer className="border-t border-gray-800 mt-auto py-4 text-center text-xs text-gray-600">
+            <a href="mailto:ryunosukeiwakawa@playrie.com" className="hover:text-gray-400 transition">
+              Contact / Feedback
+            </a>
+          </footer>
         </NextIntlClientProvider>
       </body>
     </html>
