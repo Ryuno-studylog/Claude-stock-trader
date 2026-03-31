@@ -46,6 +46,9 @@ export default function Header() {
         ) : (
           <Link href={`/${locale}/auth`} className="hover:text-white">{t("login")}</Link>
         )}
+        <a href="mailto:ryunosukeiwakawa@playrie.com" className="hover:text-white text-gray-500">
+          {t("contact")}
+        </a>
 
         {/* 言語切替 */}
         <div className="flex gap-1 border border-gray-700 rounded px-2 py-0.5">

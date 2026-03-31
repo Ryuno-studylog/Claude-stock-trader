@@ -4,7 +4,8 @@
     "history": "History",
     "settings": "Settings",
     "logout": "Logout",
-    "login": "Login"
+    "login": "Login",
+    "contact": "Contact"
   },
   "landing": {
     "headline": "Plan tomorrow's trades in 5 minutes tonight.",
