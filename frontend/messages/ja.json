@@ -10,7 +10,7 @@
   "landing": {
     "headline": "夜5分で翌日の売買計画を。",
     "subheadline": "AIが日本株をスクリーニングし、翌朝の指値・逆指値注文を提案します。",
-    "cta": "無料で始める（3回）",
+    "cta": "無料で始める（1回）",
     "features": {
       "screening": {
         "title": "ATRスクリーニング",
@@ -27,9 +27,9 @@
     },
     "pricing": {
       "title": "シンプルな料金プラン",
-      "free":    { "name": "無料",     "price": "¥0",      "desc": "3回まで無料で試せます" },
-      "credits": { "name": "クレジット", "price": "$1 / 5回", "desc": "都度買い切り。期限なし" },
-      "monthly": { "name": "月額",     "price": "$3 / 月",  "desc": "1日3回まで。いつでもキャンセル可" }
+      "free":    { "name": "無料",     "price": "¥0",      "desc": "1回だけ無料で試せます" },
+      "credits": { "name": "クレジット", "price": "$2 / 5回", "desc": "都度買い切り。期限なし" },
+      "monthly": { "name": "月額",     "price": "$6 / 月",  "desc": "1日3回まで。いつでもキャンセル可" }
     }
   },
   "dashboard": {

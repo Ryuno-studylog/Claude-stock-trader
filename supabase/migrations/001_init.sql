@@ -1,7 +1,7 @@
 -- ユーザープロフィール（auth.users を拡張）
 create table public.profiles (
   id          uuid references auth.users on delete cascade primary key,
-  credits     integer      not null default 3,   -- 無料枠3回
+  credits     integer      not null default 1,   -- 無料枠1回
   plan        text         not null default 'free', -- 'free' | 'monthly'
   language    text         not null default 'ja',
   created_at  timestamptz  not null default now(),

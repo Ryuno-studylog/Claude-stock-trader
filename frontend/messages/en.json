@@ -10,7 +10,7 @@
   "landing": {
     "headline": "Plan tomorrow's trades in 5 minutes tonight.",
     "subheadline": "AI screens Japanese stocks and suggests limit/stop-loss orders — ready to set before market open.",
-    "cta": "Start free (3 runs)",
+    "cta": "Start free (1 run)",
     "features": {
       "screening": {
         "title": "ATR Screening",
@@ -27,9 +27,9 @@
     },
     "pricing": {
       "title": "Simple Pricing",
-      "free":    { "name": "Free",    "price": "$0",       "desc": "3 free runs, no card required" },
-      "credits": { "name": "Credits", "price": "$1 / 5 runs", "desc": "Pay as you go, never expires" },
-      "monthly": { "name": "Monthly", "price": "$3 / mo",  "desc": "3 runs/day, cancel anytime" }
+      "free":    { "name": "Free",    "price": "$0",       "desc": "1 free run, no card required" },
+      "credits": { "name": "Credits", "price": "$2 / 5 runs", "desc": "Pay as you go, never expires" },
+      "monthly": { "name": "Monthly", "price": "$6 / mo",  "desc": "3 runs/day, cancel anytime" }
     }
   },
   "dashboard": {
