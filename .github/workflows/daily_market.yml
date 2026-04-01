@@ -1,9 +1,9 @@
-name: 週次ツイート生成（予約投稿16本）
+name: 日次リアルタイム市場投稿生成
 
 on:
   schedule:
-    # 毎週日曜 10:00 JST = 日曜 01:00 UTC
-    - cron: '0 1 * * 0'
+    # 月〜金 07:00 JST = 前日 22:00 UTC（日〜木）
+    - cron: '0 22 * * 0-4'
   workflow_dispatch:
 
 jobs:
@@ -19,15 +19,15 @@ jobs:
       - name: 依存ライブラリをインストール
         run: pip install anthropic yfinance
 
-      - name: 週次ツイートを生成
+      - name: 当日の市場投稿を生成
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python scripts/generate_tweets.py --mode weekly
+        run: python scripts/generate_tweets.py --mode daily
 
       - name: 生成ファイルをコミット & プッシュ
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add scripts/output/
-          git diff --staged --quiet || git commit -m "📅 週次ツイート生成 $(date +'%Y-%m-%d')"
+          git diff --staged --quiet || git commit -m "⚡ 本日の市場投稿 $(date +'%Y-%m-%d')"
           git push
