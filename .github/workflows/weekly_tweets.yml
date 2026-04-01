@@ -1,0 +1,37 @@
+name: 週次ツイート生成
+
+on:
+  schedule:
+    # 毎週月曜 8:00 JST = 日曜 23:00 UTC
+    - cron: '0 23 * * 0'
+  workflow_dispatch:
+    # GitHub Actions 画面から手動実行も可能
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 をセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 依存ライブラリをインストール
+        run: pip install anthropic yfinance
+
+      - name: ツイートを生成
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/generate_tweets.py
+
+      - name: 生成ファイルをコミット & プッシュ
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/output/
+          git diff --staged --quiet || git commit -m "🐦 週次ツイート生成 $(date +'%Y-%m-%d')"
+          git push
