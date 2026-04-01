@@ -115,7 +115,7 @@ export default function SettingsPage() {
                 <>
                   <button disabled={buying} onClick={() => checkout(CREDITS_PRICE_ID)}
                     className="bg-gray-800 hover:bg-gray-700 disabled:opacity-50 rounded-lg px-4 py-2 text-sm transition">
-                    Buy Credits ($2 / 5 runs)
+                    Buy Credits ($1 / 3 runs)
                   </button>
                   <button disabled={buying} onClick={() => checkout(MONTHLY_PRICE_ID)}
                     className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg px-4 py-2 text-sm transition">

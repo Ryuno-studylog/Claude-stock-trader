@@ -18,13 +18,13 @@ router = APIRouter(prefix="/api/billing")
 # Stripeクライアント初期化（起動時に実行される）
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
 
-CREDITS_PRICE_ID  = os.environ.get("STRIPE_CREDITS_PRICE_ID", "")   # $3 / 5回
-MONTHLY_PRICE_ID  = os.environ.get("STRIPE_MONTHLY_PRICE_ID", "")   # $9/月
+CREDITS_PRICE_ID  = os.environ.get("STRIPE_CREDITS_PRICE_ID", "")   # $1 / 3回
+MONTHLY_PRICE_ID  = os.environ.get("STRIPE_MONTHLY_PRICE_ID", "")   # $6/月
 WEBHOOK_SECRET    = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 FRONTEND_URL      = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 # クレジット購入1回で付与する回数
-CREDITS_PER_PURCHASE = 5
+CREDITS_PER_PURCHASE = 3
 
 
 class CheckoutRequest(BaseModel):
