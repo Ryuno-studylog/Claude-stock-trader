@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """
-ツイート生成スクリプト
+ツイート生成スクリプト（個人感・成長特化版）
 
 使い方:
   python scripts/generate_tweets.py --mode weekly   # 日曜: 16本の予約投稿候補を生成
   python scripts/generate_tweets.py --mode daily    # 月〜金: 当日のリアルタイム投稿を生成
-  python scripts/generate_tweets.py                 # デフォルト = weekly
-
-出力先: scripts/output/
 """
 
 import argparse
@@ -17,12 +14,10 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-# Windows での文字化け対策
 if sys.platform == "win32":
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-# ローカル実行時は backend/.env を自動読み込み
 _env_path = Path(__file__).parent.parent / "backend" / ".env"
 if _env_path.exists() and not os.environ.get("ANTHROPIC_API_KEY"):
     for line in _env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
@@ -36,6 +31,18 @@ import yfinance as yf
 client = anthropic.Anthropic()
 JST = ZoneInfo("Asia/Tokyo")
 
+# ─── キャラクター設定（プロンプト全体に一貫して使う）─────────────
+CHARACTER = """
+あなたは「Nightly Edge」というAI日本株ツールを自分のために作ったエンジニア（30代）として投稿しています。
+
+キャラクター設定:
+- 感情で売買して何度も損をした経験がある（だからAIに判断を委ねるツールを作った）
+- 専門家ではなく「同じ個人投資家の一人」として発信している
+- 知識はあるが偉そうにしない。むしろ自分の失敗を積極的に晒す
+- 歯に衣着せないが、煽りや根拠のない断言はしない
+- 「損しないために知っておいてほしい」というスタンス
+"""
+
 # ─── コンテンツプール ────────────────────────────────────────
 
 TERMS = [
@@ -43,85 +50,90 @@ TERMS = [
     "VIX（恐怖指数）",
     "MA25（25日移動平均線）",
     "損切り・ストップロス",
-    "指値注文",
-    "逆指値注文",
+    "指値注文と逆指値注文の違い",
     "単元株（100株単位）",
     "52週高値・安値レンジ",
-    "出来高（流動性）",
-    "前日比・騰落率",
+    "出来高と流動性",
     "乖離率（移動平均線からの距離）",
     "ボラティリティ",
     "セクター分散",
     "リスク・リワード比",
     "ポジションサイズ",
     "ドルコスト平均法",
-    "信用取引と現物取引の違い",
     "PER（株価収益率）",
-    "決算発表前後の値動きの特徴",
-    "市場の4フェーズ（上昇・横ばい・下落・回復）",
-    "IPO（新規上場）とその注意点",
+    "決算発表前後の値動き",
     "日経平均とTOPIXの違い",
-    "グロース株とバリュー株の違い",
+    "グロース株とバリュー株",
     "配当利回りの見方",
+    "市場の4フェーズ",
+    "IPO（新規上場）の注意点",
+    "信用取引と現物取引の違い",
 ]
 
-TIPS = [
-    "損切りラインは「入る前」に決める。含み損が膨らんでから考えると感情が邪魔をする。",
-    "1回のトレードに予算の30%以上を使わない。分散が守りの基本。",
-    "VIXが急上昇した日は買いを急がない。嵐が過ぎてから動く習慣が資産を守る。",
-    "ATRが低い銘柄ほど損切りラインが引きやすい。初心者はATR2%以下から始めよう。",
-    "出来高が少ない銘柄は指値が通りにくい。1日平均1000千株以上を目安に。",
-    "52週高値付近は高値追いになりやすい。レンジ位置80%超は慎重に。",
-    "利確ラインも逆指値で事前設定すれば、朝に注文するだけで一日動かなくていい。",
-    "MA25の上か下かだけでトレンドの大まかな方向がわかる。まずここから確認しよう。",
-    "決算発表の前後は大きく動くことが多い。初心者は決算をまたぐポジションを避けるのが無難。",
-    "含み損が出ても「戻るはず」と思い込まない。その思い込みが最大の敵。",
-    "週に1回だけ相場を見る、というルールを作ると感情的な売買が減る。",
-    "日本株は100株単位。買う前に「現在値×100」が予算内かを必ず確認しよう。",
-    "トレードノートをつけると、自分のクセや失敗パターンが見えてくる。",
-    "利益よりも「損失を小さくすること」を最優先に考えると長続きする。",
+HOT_TAKES = [
+    "証券会社の「ランキング機能」は初心者を殺すために存在していると思っている",
+    "「急落=買い時」という考え方が初心者の口座を溶かしている",
+    "損切りラインを決めずに株を買うのはシートベルトをしないで高速道路を走るのと同じ",
+    "個人投資家が負ける理由の8割は知識不足じゃなくて感情だと思っている",
+    "VIXを見ていない投資家は天気予報を見ずに外出するのと同じ",
+    "「優待株は安全」という思い込みがかなり危ない",
+    "出来高を確認しない株の買い方はギャンブルと変わらない",
+    "「長期保有すれば必ず上がる」を信じて個別株を持ち続けるのは罠",
+    "毎日株価をチェックする習慣が売買判断を狂わせている",
+    "初心者ほど「難しそうな指標」を使いたがるが、ATRとMA25だけで十分だと思っている",
 ]
 
-MISTAKES = [
-    "「急落したから買い時」と反射的に飛び込む。VIX30超えはパニック相場の入口かもしれない。",
-    "損切りを「もう少し待てば戻る」と先延ばしにする。先延ばしが最も損失を拡大させる。",
-    "出来高の少ない銘柄を指値で入れて、約定しないまま機会を逃す。",
-    "1銘柄に集中投資して、その急落で大きなダメージを受ける。",
-    "毎日チャートを見すぎて感情的な売買をしてしまう。",
-    "利益が出ているうちに売らず、欲張って天井で捕まる。",
-    "相場全体が下落しているのに個別株の「割安感」だけで買う。",
-    "SNSで話題の銘柄を確認せずに飛びつく。話題になったころには高値圏のことが多い。",
-    "証券会社アプリを開くたびにランキングを見て、知らない銘柄を衝動買いする。",
-    "勝ったトレードのやり方は覚えているが、負けたトレードの理由を振り返らない。",
+FAILURE_STORIES = [
+    "VIXが30を超えているのに「もう底だろう」と全力買いして半月で20%溶かした話",
+    "損切りラインを決めていたのに「もう少し待てば戻る」と先延ばしして結局3倍の損失になった話",
+    "Twitterで話題になっていた銘柄を確認もせずに買って翌日大幅下落した話",
+    "出来高が少ない銘柄を指値で買ったまま1週間放置して気づいたら約定していた話",
+    "含み益が出ているときに「もっと上がるはず」と利確を我慢して最終的にマイナスで手放した話",
+    "決算前にポジションを持ったまま翌日の暴落を食らった話",
+    "1銘柄に集中投資して、その銘柄の業績悪化で口座残高が半分になった話",
 ]
 
-FACTS = [
-    "東証プライムには約1,700社が上場。でも個人が手を出せる流動性の高い銘柄は上位数百社が現実的。",
-    "日本株の取引時間は前場9:00〜11:30、後場12:30〜15:30。昼休みがある主要取引所は世界的に珍しい。",
-    "単元株制度：日本株は原則100株単位。トヨタ(7203)なら100株≒35万円〜が最低購入額になる。",
-    "東証の1日あたり売買代金は約4〜5兆円。世界でも有数の市場規模を誇る。",
-    "日経平均は225銘柄の「株価平均」。TOPIXは全上場株の「時価総額加重平均」。性質が根本的に違う。",
-    "信用取引では自分の資金の約3.3倍の取引ができるが、その分リスクも3.3倍。初心者は現物から。",
-    "株主優待は日本独自の制度。年2回の優待品や割引券を目的に投資する個人投資家も多い。",
-    "東証の売買単位は2018年に全社100株に統一。以前は1株・10株・1000株など銘柄によってバラバラだった。",
-    "日本株は外国人投資家の売買比率が約6〜7割を占める。海外相場が日本株に大きく影響する理由はここ。",
-    "日本の個人投資家数は約1,700万人。人口の約14%が株式投資をしている計算になる。",
-    "NISA（少額投資非課税制度）で年間360万円まで非課税で投資できる。長期投資には強力な制度。",
-    "東証のシステム障害は2020年10月に丸1日取引停止となった。そのリスクも知っておこう。",
+ENGAGEMENT_QUESTIONS = [
+    "正直に教えてください：損切りラインを決めずに株を買ったことありますか？",
+    "日本株を始めたきっかけ、何ですか？",
+    "含み損が出たとき、あなたはどうする？",
+    "VIXという言葉、株を始める前から知ってましたか？",
+    "一番痛かった失敗トレード、教えてもらえますか？（私も晒します）",
+    "株の売買で「感情に負けた」経験、ある人いますか？",
+    "損切りがどうしてもできない人、何が邪魔してる？",
+]
+
+MYTH_BUSTS = [
+    "「急落したら買い時」というのは半分正解で半分嘘",
+    "「長期保有すれば必ず上がる」はインデックスには当てはまるが個別株には当てはまらない",
+    "「優待株は安定している」という誤解",
+    "「有名な銘柄は安全」という思い込み",
+    "「損切りすると確定損失になる」という感覚が一番の敵",
+    "「チャートは当たらない」と言う人ほどチャートを読めていない",
 ]
 
 SCENARIOS = [
     "VIXが突然20を超えたとき",
     "VIXが30を超えて警戒ゾーンに入ったとき",
     "保有株が1週間で10%下落したとき",
-    "MA25を大きく下回る銘柄を見つけたとき",
     "52週高値付近まで上昇した銘柄を持っているとき",
     "相場全体は上昇しているのに自分の銘柄だけ下落しているとき",
     "決算発表の3日前を迎えたとき",
     "含み益が予想を大きく上回ったとき",
 ]
 
-# ─── 市場データ ────────────────────────────────────────────
+FACTS = [
+    "東証プライムには約1,700社が上場しているが、出来高トップ300社が売買代金の8割を占める",
+    "日本株の取引時間は前場9:00〜11:30、後場12:30〜15:30。昼休みがある取引所は世界的に珍しい",
+    "単元株制度：日本株は原則100株単位。トヨタ(7203)なら100株≒35万円〜が最低購入額",
+    "日本株は外国人投資家の売買比率が約6〜7割を占める。米国相場が荒れると日本株も荒れる理由はここ",
+    "NISAで年間360万円まで非課税で投資できる。長期投資には使わないと純粋に損",
+    "日経平均は225銘柄の株価平均。TOPIXは全上場株の時価総額加重平均。同じ「日本株指数」でも全然違う",
+    "株主優待は日本独自の制度。世界的には配当で還元するのが主流で、優待は日本特有の文化",
+    "個人投資家数は約1,700万人。でも毎年継続して利益を出しているのは全体の2〜3割と言われている",
+]
+
+# ─── 市場データ ───────────────────────────────────────────
 
 def get_market_data() -> dict:
     result = {"vix": None, "vix_level": "不明", "nikkei_close": None, "nikkei_change": None}
@@ -148,17 +160,17 @@ def get_market_data() -> dict:
         pass
     return result
 
-# ─── Claude 呼び出し ────────────────────────────────────────
+# ─── Claude呼び出し ──────────────────────────────────────
 
 def _claude(prompt: str) -> str:
     msg = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=300,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[{"role": "user", "content": f"{CHARACTER}\n\n{prompt}"}],
     )
     return msg.content[0].text.strip()
 
-# ─── 各コンテンツタイプの生成関数 ────────────────────────────
+# ─── 生成関数 ────────────────────────────────────────────
 
 def gen_market_update(market: dict) -> str:
     vix_str = f"{market['vix']}（{market['vix_level']}）" if market["vix"] else "取得不可"
@@ -167,185 +179,240 @@ def gen_market_update(market: dict) -> str:
         if market["nikkei_close"] else "取得不可"
     )
     return _claude(f"""
-あなたは日本株投資の教育アカウントです。今朝の相場データをもとにツイートを書いてください。
-VIX: {vix_str} / 日経平均: {nikkei_str}
+今朝の相場データをもとに、個人投資家として朝の一言ツイートを書いてください。
+
+データ: VIX {vix_str} / 日経平均 {nikkei_str}
+
 - 140文字以内（日本語）
-- VIXの意味を一言で説明しつつ、今日の相場コンディションを初心者向けに伝える
-- 「今日は〇〇な日」という一言判断を入れる
+- 「今朝VIX見て〇〇と感じた」という個人の感想から入る
+- VIXが何を意味するかを一言で添える（知らない人向け）
+- 今日どう動くべきかの個人的な判断を一言
 - ハッシュタグ: #日本株 #個人投資家
-- 絵文字1〜2個
+- 数字を必ず入れる（具体性が大事）
+ツイート本文のみ出力してください。""")
+
+def gen_hot_take(hot_take: str) -> str:
+    return _claude(f"""
+以下の持論を、思い切ってツイートしてください。
+
+持論: {hot_take}
+
+- 140文字以内（日本語）
+- 断言口調でOK。ただし根拠のない煽りにならないよう1行で理由を添える
+- 「〇〇だと思っている」「〇〇だと断言する」など自分の意見として書く
+- 反論や共感を呼びやすい角度で書く（リプがつきやすいように）
+- ハッシュタグ: #日本株 #個人投資家
+- 絵文字1個
+ツイート本文のみ出力してください。""")
+
+def gen_failure_story(story: str) -> str:
+    return _claude(f"""
+以下の失敗談を、個人の体験として赤裸々に書いてください。
+
+失敗の内容: {story}
+
+- 140文字以内（日本語）
+- 「やらかした」「溶かした」など口語でOK
+- 失敗の原因（感情・思い込み・ルール無視など）を1行で
+- 同じ失敗をしないための教訓を最後に1行
+- 自虐的にならず「同じミスをしてほしくない」というスタンスで
+- ハッシュタグ: #投資失敗 #個人投資家
+ツイート本文のみ出力してください。""")
+
+def gen_engagement(question: str) -> str:
+    return _claude(f"""
+以下の質問を、フォロワーに投げかけるツイートにしてください。
+
+質問の核心: {question}
+
+- 140文字以内（日本語）
+- 「正直に教えてください」「ぶっちゃけ」など親しみやすい切り出しで
+- 自分も同じ経験があることをにおわせる（共感しやすくする）
+- リプライしやすい雰囲気にする
+- ハッシュタグ: #投資あるある #個人投資家
+- 絵文字1個
+ツイート本文のみ出力してください。""")
+
+def gen_myth_bust(myth: str) -> str:
+    return _claude(f"""
+以下のよくある思い込みを論破するツイートを書いてください。
+
+思い込み: {myth}
+
+- 140文字以内（日本語）
+- 「〇〇は嘘」「〇〇という誤解」という挑発的な書き出しでOK
+- 「なぜ間違いか」を1行で具体的に
+- 正しい考え方を1行で
+- 保存・リツイートされやすいよう「役立つ情報」感を出す
+- ハッシュタグ: #投資の誤解 #日本株
 ツイート本文のみ出力してください。""")
 
 def gen_term(term: str) -> str:
     return _claude(f"""
-あなたは日本株投資の教育アカウントです。「{term}」を完全な初心者向けに解説するツイートを書いてください。
+「{term}」を初心者向けに解説するツイートを書いてください。
+
 - 140文字以内（日本語）
-- 【○○とは？】という冒頭フォーマットで始める
-- 専門用語を使わず日常の言葉で説明
-- 「なぜ知っておくと役立つか」を1行添える
+- 「これ知らずに日本株やってると損する」という切り出しでOK
+- 専門用語を使わず日常語で説明
+- 「自分が知らなかった頃はこう思っていた→実際は〇〇」という構成でも可
+- 保存されやすいよう「使える情報」感を出す
 - ハッシュタグ: #株初心者 #日本株
-- 絵文字1〜2個（📊📚など）
-ツイート本文のみ出力してください。""")
-
-def gen_tip(tip: str) -> str:
-    return _claude(f"""
-あなたは日本株投資の教育アカウントです。以下のヒントを初心者向け実践ツイートにしてください。
-ヒント: {tip}
-- 140文字以内（日本語）
-- 「なぜ大事か」の理由を1行添える
-- 共感ベースで、上から目線にならない
-- ハッシュタグ: #投資初心者 #個人投資家
-- 絵文字1〜2個（💡✅など）
-ツイート本文のみ出力してください。""")
-
-def gen_mistake(mistake: str) -> str:
-    return _claude(f"""
-あなたは日本株投資の教育アカウントです。以下の失敗パターンをあるある共感ツイートにしてください。
-失敗: {mistake}
-- 140文字以内（日本語）
-- 「失敗あるある → 正しい考え方」の構成
-- 責める口調でなく「一緒に乗り越えよう」トーンで
-- ハッシュタグ: #投資失敗 #個人投資家
-- 絵文字1〜2個（❌⚠️など）
-ツイート本文のみ出力してください。""")
-
-def gen_fact(fact: str) -> str:
-    return _claude(f"""
-あなたは日本株投資の教育アカウントです。以下の豆知識を「へぇ！」と感じてもらえるツイートにしてください。
-豆知識: {fact}
-- 140文字以内（日本語）
-- 「だから何？」という実用性まで一言で触れる
-- ハッシュタグ: #日本株 #株初心者
-- 絵文字1〜2個（📚💡など）
+- 絵文字1〜2個
 ツイート本文のみ出力してください。""")
 
 def gen_scenario(market: dict, scenario_hint: str) -> str:
     vix = market["vix"] or 20
     return _claude(f"""
-あなたは日本株投資の教育アカウントです。「{scenario_hint}」という状況での行動指針ツイートを書いてください。
-現在のVIX: {vix}（{market.get('vix_level', '不明')}）
+「{scenario_hint}」という場面での行動指針を、個人の経験として書いてください。
+
+現在のVIX: {vix}（{market.get('vix_level','不明')}）
+
 - 140文字以内（日本語）
-- 「もし○○なら → △△する」というif-then形式
-- 今日から実践できる具体的な行動指針を1つ含める
+- 「こういうとき自分はどうするか」という一人称で書く
+- 「もし〇〇なら → 自分は△△する」というif-then形式
+- 失敗した経験があれば1行でにおわせる
 - ハッシュタグ: #リスク管理 #日本株
-- 絵文字1〜2個（🤔📌など）
+- 絵文字1個
 ツイート本文のみ出力してください。""")
 
-def gen_quiz(week_num: int) -> str:
+def gen_fact(fact: str) -> str:
     return _claude(f"""
-あなたは日本株投資の教育アカウントです。日本株の基礎知識クイズツイートを書いてください。（シード: {week_num}）
+以下の豆知識を、思わず保存・RTされるツイートにしてください。
+
+豆知識: {fact}
+
 - 140文字以内（日本語）
-- 三択（A/B/C）の問題形式
-- 知っていそうで知らない絶妙な難易度
-- 末尾に「答えは次のツイートで！」
+- 「知らなかった人は損してる」「これ意外と知られてない」という切り出しでOK
+- 「だから何？」という実用性まで1行で
+- 数字・固有名詞を積極的に使う（具体性が信頼につながる）
+- ハッシュタグ: #日本株 #株初心者
+- 絵文字1個
+ツイート本文のみ出力してください。""")
+
+def gen_quiz(seed: int) -> str:
+    return _claude(f"""
+日本株の基礎知識クイズを1問書いてください。（バリエーション番号: {seed}）
+
+- 140文字以内（日本語）
+- 三択（A/B/C）形式
+- 「知ってそうで知らない」絶妙な難易度
+- 正解した人が「これ周りに教えたい」と思えるテーマ
+- 末尾「答えは次のツイートで！」
 - ハッシュタグ: #株クイズ #株初心者
-- 絵文字で見やすく
 ツイート本文のみ出力してください。""")
 
 def gen_tool_spotlight() -> str:
     return _claude("""
-あなたは日本株AIトレードサポートツール「Nightly Edge」の中の人です。サービスの価値を自然に伝えるツイートを書いてください。
-Nightly Edgeの特徴: 夜5分で翌日の売買計画をAIが生成 / VIXでパニック相場を自動検知 / ATRで安定銘柄をスクリーニング / 指値・逆指値の価格と株数を提案 / 無料3回から試せる
+「Nightly Edge」というAI日本株ツールを作った経緯と価値を自然に伝えるツイートを書いてください。
+
+背景: 感情で売買して何度も損をしたので、夜に翌日計画を立てて朝は注文設定だけする運用にした。
+そのためのツールが欲しかったが存在しなかったので自分で作った。
+
 - 140文字以内（日本語）
-- ハードセールスにならず「こんな悩みを解決できる」スタイル
-- URLはプロフィールへ誘導（URL本文に書かない）
+- 「作った」「使ってる」という一人称で
+- 売り込みにならず「こういう悩みを解決したくて作った」スタイル
+- 無料で試せることをさりげなく（URLはプロフィールへ誘導）
 - ハッシュタグ: #日本株 #個人投資家
 - 絵文字1〜2個（🌙など）
 ツイート本文のみ出力してください。""")
 
-# ─── 週次バッチ生成（16本・予約投稿用）──────────────────────
+# ─── スケジュール構成 ─────────────────────────────────────
+
+TYPE_LABELS = {
+    "market_update": "📊 朝の相場一言",
+    "hot_take":      "🔥 持論・ホットテイク",
+    "failure_story": "😭 失敗談",
+    "engagement":    "💬 質問・エンゲージメント",
+    "myth_bust":     "🚫 よくある誤解を論破",
+    "term":          "📚 用語解説",
+    "scenario":      "🤔 シナリオ思考",
+    "fact":          "🎓 豆知識",
+    "quiz":          "❓ クイズ",
+    "tool_spotlight":"🌙 ツール紹介",
+}
 
 def generate_weekly(base_monday: date, week_num: int, market: dict) -> list[dict]:
-    """月〜日の予約投稿16本を生成する（朝の市場投稿は除く）"""
+    """月〜日の予約投稿16本を生成（朝のリアルタイム投稿は除く）"""
 
-    # 2つの用語・ヒント・失敗・豆知識・シナリオをローテーション
-    t1 = TERMS[(week_num * 2)     % len(TERMS)]
-    t2 = TERMS[(week_num * 2 + 1) % len(TERMS)]
-    ti1 = TIPS[(week_num * 2)     % len(TIPS)]
-    ti2 = TIPS[(week_num * 2 + 1) % len(TIPS)]
-    m1 = MISTAKES[(week_num * 2)     % len(MISTAKES)]
-    m2 = MISTAKES[(week_num * 2 + 1) % len(MISTAKES)]
-    f1 = FACTS[(week_num * 2)     % len(FACTS)]
-    f2 = FACTS[(week_num * 2 + 1) % len(FACTS)]
-    sc = SCENARIOS[week_num % len(SCENARIOS)]
+    # ローテーションインデックス
+    w = week_num
+    t1  = TERMS[w * 2       % len(TERMS)]
+    t2  = TERMS[(w*2+1)     % len(TERMS)]
+    ht1 = HOT_TAKES[w       % len(HOT_TAKES)]
+    ht2 = HOT_TAKES[(w+3)   % len(HOT_TAKES)]
+    fs1 = FAILURE_STORIES[w % len(FAILURE_STORIES)]
+    eq1 = ENGAGEMENT_QUESTIONS[w     % len(ENGAGEMENT_QUESTIONS)]
+    eq2 = ENGAGEMENT_QUESTIONS[(w+2) % len(ENGAGEMENT_QUESTIONS)]
+    mb1 = MYTH_BUSTS[w      % len(MYTH_BUSTS)]
+    sc1 = SCENARIOS[w       % len(SCENARIOS)]
+    sc2 = SCENARIOS[(w+2)   % len(SCENARIOS)]
+    f1  = FACTS[w           % len(FACTS)]
+    f2  = FACTS[(w+3)       % len(FACTS)]
 
-    # 4週に1回 tool_spotlight を土曜昼に挿入
-    sat_noon = ("tool_spotlight", lambda: gen_tool_spotlight()) if week_num % 4 == 0 else ("tip", lambda: gen_tip(ti2))
+    # 4週に1回ツール紹介を土曜昼に挿入
+    sat_noon_type = "tool_spotlight" if w % 4 == 0 else "hot_take"
+    sat_noon_fn   = (lambda: gen_tool_spotlight()) if w % 4 == 0 else (lambda: gen_hot_take(ht2))
 
-    # [day_offset, time_label, type_key, gen_fn]
+    # [day_offset, time, type, fn]
     schedule = [
-        # 月〜金の昼・夜（5日×2スロット = 10本）
-        (0, "12:30", "term",     lambda: gen_term(t1)),
-        (0, "19:30", "quiz",     lambda: gen_quiz(week_num)),
-        (1, "12:30", "tip",      lambda: gen_tip(ti1)),
-        (1, "19:30", "mistake",  lambda: gen_mistake(m1)),
-        (2, "12:30", "fact",     lambda: gen_fact(f1)),
-        (2, "19:30", "scenario", lambda: gen_scenario(market, sc)),
-        (3, "12:30", "term",     lambda: gen_term(t2)),
-        (3, "19:30", "tip",      lambda: gen_tip(ti2)),
-        (4, "12:30", "mistake",  lambda: gen_mistake(m2)),
-        (4, "19:30", "fact",     lambda: gen_fact(f2)),
-        # 土（3スロット）
-        (5, "07:30", "term",     lambda: gen_term(TERMS[(week_num * 2 + 2) % len(TERMS)])),
-        (5, "12:30", sat_noon[0], sat_noon[1]),
-        (5, "19:30", "quiz",     lambda: gen_quiz(week_num + 100)),
-        # 日（3スロット）
-        (6, "07:30", "fact",     lambda: gen_fact(FACTS[(week_num * 2 + 2) % len(FACTS)])),
-        (6, "12:30", "scenario", lambda: gen_scenario(market, SCENARIOS[(week_num + 1) % len(SCENARIOS)])),
-        (6, "19:30", "mistake",  lambda: gen_mistake(MISTAKES[(week_num + 2) % len(MISTAKES)])),
+        # 月〜金 昼12:30
+        (0, "12:30", "term",      lambda: gen_term(t1)),
+        (1, "12:30", "myth_bust", lambda: gen_myth_bust(mb1)),
+        (2, "12:30", "term",      lambda: gen_term(t2)),
+        (3, "12:30", "fact",      lambda: gen_fact(f1)),
+        (4, "12:30", "myth_bust", lambda: gen_myth_bust(MYTH_BUSTS[(w+2) % len(MYTH_BUSTS)])),
+        # 月〜金 夜19:30
+        (0, "19:30", "hot_take",     lambda: gen_hot_take(ht1)),
+        (1, "19:30", "failure_story",lambda: gen_failure_story(fs1)),
+        (2, "19:30", "engagement",   lambda: gen_engagement(eq1)),
+        (3, "19:30", "quiz",         lambda: gen_quiz(w)),
+        (4, "19:30", "scenario",     lambda: gen_scenario(market, sc1)),
+        # 土
+        (5, "07:30", "fact",          lambda: gen_fact(f2)),
+        (5, "12:30", sat_noon_type,   sat_noon_fn),
+        (5, "19:30", "engagement",    lambda: gen_engagement(eq2)),
+        # 日
+        (6, "07:30", "term",          lambda: gen_term(TERMS[(w*2+2) % len(TERMS)])),
+        (6, "12:30", "scenario",      lambda: gen_scenario(market, sc2)),
+        (6, "19:30", "failure_story", lambda: gen_failure_story(FAILURE_STORIES[(w+2) % len(FAILURE_STORIES)])),
     ]
 
-    type_labels = {
-        "market_update": "📊 相場コンディション",
-        "term":          "📚 用語解説",
-        "tip":           "💡 初心者ヒント",
-        "fact":          "🎓 豆知識",
-        "mistake":       "⚠️ よくある失敗",
-        "scenario":      "🤔 シナリオ思考",
-        "quiz":          "❓ クイズ",
-        "tool_spotlight":"🌙 ツール紹介",
-    }
-
-    day_names = ["月", "火", "水", "木", "金", "土", "日"]
+    day_names = ["月","火","水","木","金","土","日"]
     tweets = []
 
-    for day_offset, time_str, type_key, gen_fn in schedule:
-        post_date = base_monday + timedelta(days=day_offset)
-        label = type_labels.get(type_key, type_key)
-        scheduled_at = f"{post_date.strftime('%Y-%m-%d')} {time_str} JST"
-        print(f"  [{len(tweets)+1:02d}/16] {day_names[day_offset]}曜 {time_str} | {label} 生成中...")
+    for day_off, time_str, type_key, gen_fn in schedule:
+        post_date = base_monday + timedelta(days=day_off)
+        label = TYPE_LABELS.get(type_key, type_key)
+        print(f"  [{len(tweets)+1:02d}/16] {day_names[day_off]}曜 {time_str} | {label} 生成中...")
         text = gen_fn()
         tweets.append({
-            "scheduled_at": scheduled_at,
-            "day":          day_names[day_offset],
-            "time":         time_str,
-            "type":         type_key,
-            "label":        label,
-            "realtime":     False,
-            "text":         text,
-            "chars":        len(text),
+            "scheduled_at": f"{post_date.strftime('%Y-%m-%d')} {time_str} JST",
+            "day":   day_names[day_off],
+            "time":  time_str,
+            "type":  type_key,
+            "label": label,
+            "realtime": False,
+            "text":  text,
+            "chars": len(text),
         })
 
-    return tweets
-
-# ─── 日次リアルタイム生成（1本）─────────────────────────────
+    return sorted(tweets, key=lambda t: t["scheduled_at"])
 
 def generate_daily(today: date, market: dict) -> dict:
-    """当日の朝投稿（リアルタイム市場コメント）を1本生成する"""
-    print("  [1/1] 📊 相場コンディション 生成中...")
+    print("  [1/1] 📊 朝の相場一言 生成中...")
     text = gen_market_update(market)
     return {
         "scheduled_at": f"{today.strftime('%Y-%m-%d')} 07:30 JST",
-        "day":          ["月","火","水","木","金","土","日"][today.weekday()],
-        "time":         "07:30",
-        "type":         "market_update",
-        "label":        "📊 相場コンディション",
-        "realtime":     True,
-        "text":         text,
-        "chars":        len(text),
+        "day":   ["月","火","水","木","金","土","日"][today.weekday()],
+        "time":  "07:30",
+        "type":  "market_update",
+        "label": TYPE_LABELS["market_update"],
+        "realtime": True,
+        "text":  text,
+        "chars": len(text),
     }
 
-# ─── Markdown 保存 ────────────────────────────────────────
+# ─── Markdown保存 ────────────────────────────────────────
 
 def save_markdown(tweets: list[dict], filename: str) -> Path:
     output_dir = Path(__file__).parent / "output"
@@ -355,41 +422,37 @@ def save_markdown(tweets: list[dict], filename: str) -> Path:
     lines = [
         f"# ツイート候補｜{filename.replace('.md','')}",
         "",
-        "> **投稿前に確認**: 事実誤認があれば修正してください。140字を超えている場合は短縮してください。",
+        "> **投稿前に確認**: 事実誤認は修正してください。140字超は短縮してください。",
         "",
     ]
 
-    realtime_tweets  = [t for t in tweets if t["realtime"]]
-    scheduled_tweets = [t for t in tweets if not t["realtime"]]
+    realtime  = [t for t in tweets if t["realtime"]]
+    scheduled = [t for t in tweets if not t["realtime"]]
 
-    if realtime_tweets:
-        lines += ["## ⚡ リアルタイム投稿（当日の朝に手動投稿）", ""]
-        for t in realtime_tweets:
+    if realtime:
+        lines += ["## ⚡ リアルタイム投稿（当日朝に手動投稿）", ""]
+        for t in realtime:
             over = " ⚠️ 140字超" if t["chars"] > 140 else ""
-            lines += [
-                f"### {t['scheduled_at']} | {t['label']}",
-                "", "```", t["text"], "```", "",
-                f"文字数: **{t['chars']}字**{over}", "",
-            ]
+            lines += [f"### {t['scheduled_at']} | {t['label']}",
+                      "", "```", t["text"], "```", "",
+                      f"文字数: **{t['chars']}字**{over}", ""]
 
-    if scheduled_tweets:
-        lines += ["---", "## 📅 予約投稿（週末にまとめてスケジュール設定）", ""]
-        for t in scheduled_tweets:
+    if scheduled:
+        lines += ["---", "## 📅 予約投稿（週末にXでスケジュール設定）", ""]
+        for t in scheduled:
             over = " ⚠️ 140字超" if t["chars"] > 140 else ""
-            lines += [
-                f"### {t['scheduled_at']} | {t['label']}",
-                "", "```", t["text"], "```", "",
-                f"文字数: **{t['chars']}字**{over}", "",
-            ]
+            lines += [f"### {t['scheduled_at']} | {t['label']}",
+                      "", "```", t["text"], "```", "",
+                      f"文字数: **{t['chars']}字**{over}", ""]
 
     out_path.write_text("\n".join(lines), encoding="utf-8")
     return out_path
 
-# ─── エントリーポイント ───────────────────────────────────
+# ─── エントリーポイント ──────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["weekly", "daily"], default="weekly")
+    parser.add_argument("--mode", choices=["weekly","daily"], default="weekly")
     args = parser.parse_args()
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
@@ -400,24 +463,22 @@ def main():
     week_num = today.isocalendar()[1]
     monday   = today - timedelta(days=today.weekday())
 
-    print(f"📡 市場データ取得中...")
+    print("📡 市場データ取得中...")
     market = get_market_data()
     print(f"   VIX: {market['vix']} ({market['vix_level']}) / 日経: {market.get('nikkei_close','N/A')}\n")
 
     if args.mode == "daily":
         print(f"⚡ 当日リアルタイム投稿を生成します（{today}）\n")
         tweet = generate_daily(today, market)
-        path = save_markdown([tweet], f"daily_{today}.md")
+        path  = save_markdown([tweet], f"daily_{today}.md")
         print(f"\n✅ 完了 → {path}")
-        print(f"\n【本日 07:30 投稿】{tweet['label']}（{tweet['chars']}字）")
+        print(f"\n【本日 07:30 投稿】({tweet['chars']}字)")
         print(tweet["text"])
-
-    else:  # weekly
+    else:
         print(f"📅 週次予約投稿を生成します（{monday} 週）\n")
         tweets = generate_weekly(monday, week_num, market)
-        path = save_markdown(tweets, f"weekly_{monday}.md")
+        path   = save_markdown(tweets, f"weekly_{monday}.md")
         print(f"\n✅ 完了 → {path}")
-        print(f"\n合計 {len(tweets)} 本（うち予約投稿 {sum(1 for t in tweets if not t['realtime'])} 本）")
         over = [t for t in tweets if t["chars"] > 140]
         if over:
             print(f"⚠️ 140字超: {len(over)} 本（要修正）")
