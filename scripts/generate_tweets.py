@@ -168,6 +168,22 @@ def _claude(prompt: str) -> str:
         max_tokens=300,
         messages=[{"role": "user", "content": f"{CHARACTER}\n\n{prompt}"}],
     )
+    text = msg.content[0].text.strip()
+    if len(text) > 140:
+        text = _trim(text)
+    return text
+
+def _trim(text: str) -> str:
+    """140字超のツイートをClaudeに短縮させる"""
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=200,
+        messages=[{"role": "user", "content": f"""以下のツイートを140文字以内に短縮してください。
+意味・トーン・ハッシュタグは保ちつつ、不要な言い回しや重複表現を削ってください。
+短縮後のツイート本文のみ出力してください。
+
+{text}"""}],
+    )
     return msg.content[0].text.strip()
 
 # ─── 生成関数 ────────────────────────────────────────────
